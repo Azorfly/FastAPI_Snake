@@ -1,13 +1,15 @@
-from app.schemas.schemas import Snake, SnakePatch
+from app.schemas.schemas import Snake, SnakePatch, AddSnake
 from app.services import snakes as snake_service
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from app.db_session import get_session
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/snake", tags=["Snakes"])
 
 
 @router.get("/{snake_id}")
-def get_snake(snake_id: int):
-    snake = snake_service.get_snake(snake_id)
+def get_snake(snake_id: int, session: Session = Depends(get_session)) -> dict:
+    snake = snake_service.get_snake(session, snake_id)
     if snake is None:
         raise HTTPException(status_code=404, detail="Такой змеи нет.")
 
@@ -17,29 +19,24 @@ def get_snake(snake_id: int):
         "age": snake["snake_age"],
     }
 
-
 @router.get("")
-def get_all_snakes():
-    return {"all_users": snake_service.get_all_snakes()}
+def get_all_snakes(session: Session = Depends(get_session)) -> list[Snake]:
+    return snake_service.get_all_snakes(session)
 
 
 @router.post("")
-def add_snake(snake: Snake):
+def add_snake(snake: AddSnake, session: Session = Depends(get_session)) -> dict:
     result = snake_service.add_snake(
-        snake.snake_id, snake.snake_name, snake.snake_age
+        snake.snake_name, snake.snake_age, session
     )
-    if result is None:
-        raise HTTPException(
-            status_code=400, detail="Змея с таким id уже существует!"
-        )
 
     return {"message": "Змея добавлена!"}
 
 
 @router.patch("/{snake_id}")
-def update_snake(snake_id: int, snake_data: SnakePatch):
+def update_snake(snake_id: int, snake_data: SnakePatch, session: Session = Depends(get_session)) -> dict:
     updated_snake = snake_service.update_snake(
-        snake_id, snake_data.snake_name, snake_data.snake_age
+        session, snake_id, snake_data.snake_name, snake_data.snake_age
     )
     if updated_snake is None:
         raise HTTPException(status_code=404, detail="Такой змеи нет.")
@@ -51,9 +48,9 @@ def update_snake(snake_id: int, snake_data: SnakePatch):
 
 
 @router.delete("/{snake_id}")
-def delete_user(snake_id: int):
-    success = snake_service.delete_snake(snake_id)
+def delete_snake(snake_id: int, session: Session = Depends(get_session)) -> dict:
+    success = snake_service.delete_snake(session, snake_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=404, detail="Такой змеи нет.")
 
     return {"message": "Змея удалена"}

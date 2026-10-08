@@ -11,3 +11,8 @@ class Snake(BaseModel):
 class SnakePatch(BaseModel):
     snake_name: Optional[str] = None
     snake_age: Optional[int] = None
+
+
+class AddSnake(BaseModel):
+    snake_name: str
+    snake_age: int
