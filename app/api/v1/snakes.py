@@ -3,6 +3,7 @@ from app.services import snakes as snake_service
 from fastapi import APIRouter, HTTPException, Depends
 from app.db_session import get_session
 from sqlalchemy.orm import Session
+from app.exceptions import SnakeNotFound
 
 router = APIRouter(prefix="/snake", tags=["Snakes"])
 
@@ -10,8 +11,6 @@ router = APIRouter(prefix="/snake", tags=["Snakes"])
 @router.get("/{snake_id}")
 def get_snake(snake_id: int, session: Session = Depends(get_session)) -> dict:
     snake = snake_service.get_snake(session, snake_id)
-    if snake is None:
-        raise HTTPException(status_code=404, detail="Такой змеи нет.")
 
     return {
         "snake_id": snake_id,
@@ -38,8 +37,6 @@ def update_snake(snake_id: int, snake_data: SnakePatch, session: Session = Depen
     updated_snake = snake_service.update_snake(
         session, snake_id, snake_data.snake_name, snake_data.snake_age
     )
-    if updated_snake is None:
-        raise HTTPException(status_code=404, detail="Такой змеи нет.")
 
     return {
         "message": f"Змея с id {snake_id} обновлена!",
@@ -49,8 +46,7 @@ def update_snake(snake_id: int, snake_data: SnakePatch, session: Session = Depen
 
 @router.delete("/{snake_id}")
 def delete_snake(snake_id: int, session: Session = Depends(get_session)) -> dict:
-    success = snake_service.delete_snake(session, snake_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Такой змеи нет.")
+    snake_service.delete_snake(session, snake_id)
+    return {"message": f"Змея с ID {snake_id} удалена."}
 
-    return {"message": "Змея удалена"}
+# Чёта наворотил с делитом, выкидывает 500 код хттп

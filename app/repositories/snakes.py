@@ -2,6 +2,7 @@ from typing import Optional
 from sqlalchemy import String, Integer, Text, create_engine, select, Date, func, insert, Row, update, delete
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from datetime import date
+from app.exceptions import SnakeNotFound
 
 
 DATABASE_URL = "postgresql+psycopg://postgres:Sky123@localhost:5432/postgres"
@@ -24,13 +25,17 @@ class Snakes(Base):
     )
 
 
-def get_snake_by_id(session: Session, snake_id: int) -> Row | None:
+def get_snake_by_id(session: Session, snake_id: int) -> Row:
     stmt = (
         select(Snakes.name, Snakes.age)
         .where(Snakes.id == snake_id)
     )
-    results = session.execute(stmt).one_or_none()
-    return results
+    row = session.execute(stmt).one_or_none()
+    if row is None:
+        raise SnakeNotFound(snake_id)
+
+    session.commit()
+    return row
 
     
 def get_all_snakes_from_db(session: Session) -> Row:
@@ -49,16 +54,26 @@ def create_snake_in_db(name: str, age: int, session: Session) -> Row:
     return done
 
 
-def update_snake_in_db(session: Session, snake_id: int, data: dict) -> Row | None:
+def update_snake_in_db(session: Session, snake_id: int, data: dict) -> Row:
     stmt = (
         update(Snakes)
         .where(Snakes.id == snake_id)
         .values(**data)
         .returning(Snakes.id, Snakes.name, Snakes.age)
     )
-    return session.execute(stmt).one_or_none()
+    row = session.execute(stmt).one_or_none()
+
+    if row is None:
+        raise SnakeNotFound(snake_id)
+
+    session.commit()
+    return row
 
 
-def delete_snake_in_db(session: Session, snake_id: int) -> Row | None:
+def delete_snake_in_db(session: Session, snake_id: int) -> None:
     stmt = delete(Snakes).where(Snakes.id == snake_id).returning(Snakes.id)
-    return session.execute(stmt).one_or_none()
+    row = session.execute(stmt).one_or_none()
+    if row is None:
+        raise SnakeNotFound(snake_id)
+
+    session.commit()

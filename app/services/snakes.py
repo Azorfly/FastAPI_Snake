@@ -6,8 +6,6 @@ from sqlalchemy import Row
 
 def get_snake(session: Session, snake_id: int) -> dict:
     snake = snake_repo.get_snake_by_id(session, snake_id)
-    if snake is None:
-        return None
     return {'snake_name': snake[0], 'snake_age': snake[1]}
 
 
@@ -44,16 +42,10 @@ def update_snake(
         return Snake(snake_id=snake_id, snake_name=row.name, snake_age=row.age)
 
     row = snake_repo.update_snake_in_db(session, snake_id, data)
-    if row is None:
-        return None
 
     session.commit()
     return Snake(snake_id=row.id, snake_name=row.name, snake_age=row.age)
 
 
-def delete_snake(session: Session, snake_id: int) -> bool:
-    row = snake_repo.delete_snake_in_db(session, snake_id)
-    if row is None:
-        return False
-    session.commit()
-    return True
+def delete_snake(session: Session, snake_id: int) -> None:
+    snake_repo.delete_snake_in_db(session, snake_id)
