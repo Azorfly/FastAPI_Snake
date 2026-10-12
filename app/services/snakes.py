@@ -1,51 +1,47 @@
 from app.repositories import snakes as snake_repo
 from app.schemas.schemas import Snake
 from sqlalchemy.orm import Session
-from sqlalchemy import Row
 
 
-def get_snake(session: Session, snake_id: int) -> dict:
-    snake = snake_repo.get_snake_by_id(session, snake_id)
-    return {'snake_name': snake[0], 'snake_age': snake[1]}
+class SnakeService:
+    def __init__(self, session: Session):
+        self.session = session
 
+    def get_snake(self, snake_id: int) -> Snake:
+        db_snake = snake_repo.get_snake_by_id(self.session, snake_id)
+        return Snake(
+            snake_id=db_snake.id,
+            snake_name=db_snake.name,
+            snake_age=db_snake.age,
+            added=db_snake.added
+        )
 
-def get_all_snakes(session: Session) -> list:
-    rows = snake_repo.get_all_snakes_from_db(session)
-    snake_list = []
-    for snake in rows:
-        snake_list.append(Snake(snake_id=snake.id, snake_name=snake.name, snake_age=snake.age))
+    def get_all_snakes(self) -> list[Snake]:
+        rows = snake_repo.get_all_snakes_from_db(self.session)
+        return [Snake(snake_id=r.id, snake_name=r.name, snake_age=r.age, added=r.added) for r in rows]
 
-    return snake_list
+    def add_snake(self, name: str, age: int) -> Snake:
+        db_snake = snake_repo.create_snake_in_db(name, age, self.session)
+        return Snake(
+            snake_id=db_snake.id,
+            snake_name=db_snake.name,
+            snake_age=db_snake.age,
+            added=db_snake.added
+        )
 
+    def update_snake(self, snake_id: int, name: str | None = None, age: int | None = None) -> Snake:
+        data = {}
+        if name is not None:
+            data["name"] = name
+        if age is not None:
+            data["age"] = age
 
-def add_snake(name: str, age: int, session: Session) -> Row:
-    snake = snake_repo.create_snake_in_db(name, age, session)
-    return snake
+        if not data:
+            row = snake_repo.get_snake_by_id(self.session, snake_id)
+            return Snake(snake_id=snake_id, snake_name=row.name, snake_age=row.age)
 
+        row = snake_repo.update_snake_in_db(self.session, snake_id, data)
+        return Snake(snake_id=row.id, snake_name=row.name, snake_age=row.age, added=row.added)
 
-def update_snake(
-    session: Session,
-    snake_id: int,
-    name: str | None = None,
-    age: int | None = None,
-) -> Snake | None:
-    data = {}
-    if name is not None:
-        data["name"] = name
-    if age is not None:
-        data["age"] = age
-
-    if not data:
-        row = snake_repo.get_snake_by_id(session, snake_id)
-        if row is None:
-            return None
-        return Snake(snake_id=snake_id, snake_name=row.name, snake_age=row.age)
-
-    row = snake_repo.update_snake_in_db(session, snake_id, data)
-
-    session.commit()
-    return Snake(snake_id=row.id, snake_name=row.name, snake_age=row.age)
-
-
-def delete_snake(session: Session, snake_id: int) -> None:
-    snake_repo.delete_snake_in_db(session, snake_id)
+    def delete_snake(self, snake_id: int) -> None:
+        snake_repo.delete_snake_in_db(self.session, snake_id)
