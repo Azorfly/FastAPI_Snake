@@ -12,7 +12,7 @@ A small learning project where I studied **HTTP** and **FastAPI**. It is a mini 
 
 ## Tech stack
 
-Python 3.10+, FastAPI, Pydantic, Uvicorn
+Python 3.10+, FastAPI, Pydantic, Uvicorn, PostgreSQL, SQLAlchemy
 
 ## Project structure
 
@@ -59,7 +59,3 @@ curl -X POST http://127.0.0.1:8000/snake \
 ```json
 { "message": "Змея добавлена!" }
 ```
-
-## Note
-
-Data is stored in memory, so it is lost when the server restarts.
