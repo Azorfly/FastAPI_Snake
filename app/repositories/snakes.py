@@ -1,15 +1,13 @@
-from sqlalchemy import create_engine, select, insert, Row, update, delete
+from collections.abc import Sequence
+
+from sqlalchemy import select, insert, Row, update, delete
 from sqlalchemy.orm import Session
 
 from app.exceptions import SnakeNotFound
 from app.models.snake import Snakes
 
 
-DATABASE_URL = "postgresql+psycopg://postgres:Sky123@localhost:5432/postgres"
-engine = create_engine(DATABASE_URL)
-
-
-def get_snake_by_id(session: Session, snake_id: int) -> Row:
+def get_snake_by_id(session: Session, snake_id: int) -> Snakes:
     stmt = select(Snakes).where(Snakes.id == snake_id)
     row = session.execute(stmt).scalar_one_or_none()
     if row is None:
@@ -18,12 +16,12 @@ def get_snake_by_id(session: Session, snake_id: int) -> Row:
     return row
 
     
-def get_all_snakes_from_db(session: Session) -> Row:
+def get_all_snakes_from_db(session: Session) -> Sequence[Row]:
     stmt = select(Snakes.id, Snakes.name, Snakes.age, Snakes.added).order_by(Snakes.id)
     return session.execute(stmt).all()
 
 
-def create_snake_in_db(name: str, age: int, session: Session) -> Row:
+def create_snake_in_db(session: Session, name: str, age: int) -> Row:
     stmt = (
         insert(Snakes)
         .values(name=name, age=age)

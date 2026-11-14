@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-
 from app.db_session import get_session
 from app.schemas.schemas import Snake, SnakePatch, AddSnake
 from app.services.snakes import SnakeService
+
 
 router = APIRouter(prefix="/snake", tags=["Snakes"])
 
@@ -24,7 +24,7 @@ def get_all_snakes(service: SnakeService = Depends(get_snake_service)) -> list[S
     return service.get_all_snakes()
 
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 def add_snake(snake: AddSnake, service: SnakeService = Depends(get_snake_service)) -> dict:
     result = service.add_snake(snake.snake_name, snake.snake_age)
 
